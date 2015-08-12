@@ -58,14 +58,14 @@ factor_list = []
 for model in models:
     p_dict = dict(zip(model.pvalues.index,model.pvalues))
     params_dict = dict(zip(model.params.index,model.params))
-    filtered_dict = {k:abs(v) for (k,v) in params_dict.items() if p_dict.get(k) < 0.1 and k is not 'Intercept'}
+    filtered_dict = {k:[abs(v)] for (k,v) in params_dict.items() if p_dict.get(k) < 0.1 and k is not 'Intercept'}
     sorted_list = sorted(filtered_dict.items(), key=operator.itemgetter(1),reverse = True)
     if len(sorted_list) >2:
         sorted_list = sorted_list[0:2] 
     factor_list.append(sorted_list)
     
 
-print(factor_list)
+factor_dict=[dict(x) for x in factor_list]
 
 
 
@@ -110,7 +110,7 @@ def update(a):
     document.clear()
     hover=HoverTool(tooltips=[("County Name","@i")])
     p = figure(title="US Health Indicator-Virginia", toolbar_location="left",
-           plot_width=1100, plot_height=700,tools=[hover])
+           plot_width=900, plot_height=600,tools=[hover])
 
     county_colors=[]    
     for county in data_counties[col_dic.get(a)]:
@@ -127,16 +127,15 @@ def update(a):
 
         else:
             county_colors.append("white") 
-    source.data=dict(x=va_x,y=va_y,c=county_colors,i=list(data_counties.index)) 
-    #inf_source.data=influencers[a]    
-    #print(source.data['x'])
+    source.data=dict(x=va_x,y=va_y,c=county_colors,i=list(data_counties.index))    
          
     data_counties_map=data_counties.reset_index()
     data_counties_map['color']=pd.Series(county_colors)
-    data_counties_map.sort(col_dic.get(a),inplace=True)
+    data_counties_map.sort(col_dic.get(a),inplace=True)    
     ind_top3=list(data_counties_map.index[0:3])
     data_counties_map.sort(col_dic.get(a),inplace=True,ascending=False)
-    ind_bot3=list(data_counties_map.index[0:3])    
+    ind_bot3=list(data_counties_map.index[0:3])  
+    
     
     p.patches(xs='x',ys='y', fill_color='c',source=source,alpha=0.5)
 
@@ -146,10 +145,10 @@ def update(a):
     for i in ind_bot3:
         p.patch(x=va_xs[i],y=va_ys[i],fill_color=data_counties_map.ix[i,'color'],line_color="blue",line_width=2)
 
-   # bar=Bar(inf_source.data,title="Top Influencers",legend=True)
+    bar=Bar(factor_dict[a],title="Top Influencers",legend="top_right",height=500,width=500
     layout=VBox(children=[radio,p])
-    #layout1=HBox(children=[layout,bar])
-    document.add(layout)
+    layout1=HBox(children=[layout,bar])
+    document.add(layout1)
     session.store_document(document)
         
     
