@@ -13,7 +13,6 @@ from bokeh.session import Session
 from bokeh.plotting import figure
 from bokeh.charts import Bar
 from bokeh.sampledata import us_counties
-import numpy as np
 import math
 import operator
 
@@ -103,10 +102,16 @@ document=Document()
 session.use_doc('python_project')
 session.load_document(document)
 
-col_dic =  {0:"Cancer_Deaths", 1:"Heart_Disease_Deaths", 2:"HIV_Deaths", 3:"Diabetes_Deaths"}
+col_dic =  {0:"Cancer_Deaths", 1:"Heart_Disease_Deaths", 2:"Respiratory_Disease_Deaths", 3:"Diabetes_Deaths"}
 
 def update(a):    
+
     global county_colors
+    document.clear()
+    hover=HoverTool(tooltips=[("County Name","@i")])
+    p = figure(title="US Health Indicator-Virginia", toolbar_location="left",
+           plot_width=1100, plot_height=700,tools=[hover])
+
     county_colors=[]    
     for county in data_counties[col_dic.get(a)]:
         if county>top_qtl[col_dic.get(a)] :
@@ -125,32 +130,34 @@ def update(a):
     source.data=dict(x=va_x,y=va_y,c=county_colors,i=list(data_counties.index)) 
     #inf_source.data=influencers[a]    
     #print(source.data['x'])
+         
+    data_counties_map=data_counties.reset_index()
+    data_counties_map['color']=pd.Series(county_colors)
+    data_counties_map.sort(col_dic.get(a),inplace=True)
+    ind_top3=list(data_counties_map.index[0:3])
+    data_counties_map.sort(col_dic.get(a),inplace=True,ascending=False)
+    ind_bot3=list(data_counties_map.index[0:3])    
+    
+    p.patches(xs='x',ys='y', fill_color='c',source=source,alpha=0.5)
 
-    bar=Bar(inf_source.data,title="Top Influencers",legend=True)
-    document.clear()
-    layout1=HBox(children=[layout,bar])
-    document.add(layout1)
+    for i in ind_top3:
+        p.patch(x=va_xs[i],y=va_ys[i],fill_color=data_counties_map.ix[i,'color'],line_color="black",line_width=2)
+    
+    for i in ind_bot3:
+        p.patch(x=va_xs[i],y=va_ys[i],fill_color=data_counties_map.ix[i,'color'],line_color="blue",line_width=2)
+
+   # bar=Bar(inf_source.data,title="Top Influencers",legend=True)
+    layout=VBox(children=[radio,p])
+    #layout1=HBox(children=[layout,bar])
+    document.add(layout)
     session.store_document(document)
         
     
 source=ColumnDataSource(data=dict(x=[],y=[],c=[],i=[]))
 inf_source=ColumnDataSource(data=dict(facs=[]))
 
-hover=HoverTool(tooltips=[("County Name","@i")])
-
-p = figure(title="US Health Indicator-Virginia", toolbar_location="left",
-           plot_width=1100, plot_height=700,tools=[hover])
-
-p.patches(xs='x',ys='y', fill_color='c',source=source,alpha=0.5)
-bar=Bar(inf_source.data,title="Top Influencers",legend=True)
-
-radio=RadioButtonGroup(labels=['Cancer Deaths','Heart Disease Deaths', 'HIV Deaths', 'Diabetes Deaths'],active=0)
+radio=RadioButtonGroup(labels=['Cancer Deaths','Heart Disease Deaths', 'Respiratory Disease Deaths', 'Diabetes Deaths'],active=0)
 radio.on_click(update)
-
-
-layout=VBox(children=[radio,p])
-layout1=HBox(children=[layout,bar])
-document.add(layout1)
 
 update(0)
 
