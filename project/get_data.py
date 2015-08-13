@@ -9,16 +9,7 @@ from xml.etree import ElementTree
 
 indicator_map = {15:"Obesity", 13:"Smoking", 25:"Primary_Care", 34:"College_Degrees", 23:"No_Insurance", 10003:"Median_Household_Income", 51:"Liquor_Stores", 200:"Long_Term_Care_Hospital_Admissions",35:"Unemployed_Persons",50011:"Diabetes_Deaths", 486:"Cancer_Deaths", 83:"Heart_Disease_Deaths", 50012:"Respiratory_Disease_Deaths" }
 
-county_map = {}
 auth = "Key=5346643abe134855907383ecf8bd7db0"
-
-def populate_county_map():
-    f = open("FPS_county_mapping.txt", "r")
-    for line in f.readlines():
-        if "\t" in line:
-            county_map["51" + line.strip().split("\t")[1]] = line.strip().split("\t")[0]
-        
-populate_county_map()
 
 f = open("indicators.csv", "a")
 for ind in indicator_map:
@@ -37,7 +28,6 @@ for ind in indicator_map:
                         print (fips)
                         if  fips.startswith('51') and len(fips) == 5 and str(indicator.find('DimensionGraphHeader').text).lower() == 'total':
                             f.write(indicator_map.get(ind)+","+str(indicator.find('FIPSCode').text).strip() + "," + ("" if indicator.find('FloatValue').text is None else str(indicator.find('FloatValue').text).strip()) + "\n")
-                            #print(indicator_map.get(ind) + "," + str(indicator.find('FIPSCode').text).strip() + "," + "0" if str(indicator.find('FloatValue').text) is None else str(indicator.find('FloatValue').text).strip() + "\n");
                             
 f.close()
                          

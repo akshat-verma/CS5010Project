@@ -116,18 +116,13 @@ def update(a):
     for county in data_counties[col_dic.get(a)]:
         if county>top_qtl[col_dic.get(a)] :
             county_colors.append("red")
-            print (county,"red")
         elif county>middle_qtl[col_dic.get(a)]:
             county_colors.append( "yellow")
-            print (county,"yellow")
         elif not math.isnan(county):
             county_colors.append("green")
-            print (county,"green")
-            print(top_qtl[col_dic.get(a)])
-
         else:
             county_colors.append("white") 
-    source.data=dict(x=va_x,y=va_y,c=county_colors,i=list(data_counties.index))    
+    source.data=dict(x=va_x,y=va_y,c=county_colors,i=county_nm)    
          
     data_counties_map=data_counties.reset_index()
     data_counties_map['color']=pd.Series(county_colors)
@@ -145,7 +140,7 @@ def update(a):
     for i in ind_bot3:
         p.patch(x=va_xs[i],y=va_ys[i],fill_color=data_counties_map.ix[i,'color'],line_color="blue",line_width=2)
 
-    bar=Bar(factor_dict[a],title="Top Influencers",legend="top_right",height=500,width=500
+    bar=Bar(factor_dict[a],title="Top Influencers",legend="top_left",height=500,width=500)
     layout=VBox(children=[radio,p])
     layout1=HBox(children=[layout,bar])
     document.add(layout1)
