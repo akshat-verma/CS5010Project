@@ -7,7 +7,7 @@ Created on Aug 9, 2015
 import requests
 from xml.etree import ElementTree
 
-indicator_map = {15:"Obesity", 13:"Smoking", 25:"Primary_Care", 34:"College_Degrees", 23:"No_Insurance", 10003:"Median_Household_Income", 51:"Liquor_Stores", 200:"Long_Term_Care_Hospital_Admissions",35:"Unemployed_Persons",50011:"Diabetes_Deaths", 486:"Cancer_Deaths", 83:"Heart_Disease_Deaths", 935:"HIV_Deaths" }
+indicator_map = {15:"Obesity", 13:"Smoking", 25:"Primary_Care", 34:"College_Degrees", 23:"No_Insurance", 10003:"Median_Household_Income", 51:"Liquor_Stores", 200:"Long_Term_Care_Hospital_Admissions",35:"Unemployed_Persons",50011:"Diabetes_Deaths", 486:"Cancer_Deaths", 83:"Heart_Disease_Deaths", 50012:"Respiratory_Disease_Deaths" }
 
 county_map = {}
 auth = "Key=5346643abe134855907383ecf8bd7db0"

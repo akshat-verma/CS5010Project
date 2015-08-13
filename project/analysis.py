@@ -15,7 +15,7 @@ from bokeh.charts import Bar
 from bokeh.sampledata import us_counties
 import numpy as np
 import math
-from sympy.printing.pretty.pretty_symbology import MID
+import operator
 
 
 
@@ -24,6 +24,16 @@ df = pd.DataFrame({'Value' : df.groupby( [ "County", "Indicator Type"] )['Value'
 df = df.pivot_table("Value",["County"],"Indicator Type").reset_index()
 df.set_index('County',inplace=True)
 
+def normalize(df):
+    normalized = df.copy()
+    for col_name in df.columns:
+        max_val = df[col_name].max()
+        min_val = df[col_name].min()
+        normalized[col_name] = (df[col_name] - min_val) / (max_val- min_val)
+    return normalized
+
+
+df = normalize(df)
 
 
 '''
@@ -32,20 +42,34 @@ print(dict(zip(result.pvalues.index,result.pvalues)))
 '''
 #Regression
 
-heart_deaths = sm.ols(formula="Heart_Disease_Deaths ~ Obesity + Binge_Drinking + Smoking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
-print (heart_deaths.summary())
-print(dict(zip(heart_deaths.pvalues.index,heart_deaths.pvalues)))
+heart_deaths = sm.glm(formula="Heart_Disease_Deaths ~ Obesity + Binge_Drinking + Smoking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
+cancer_deaths = sm.glm(formula="Cancer_Deaths ~ Obesity + Binge_Drinking + Smoking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
+diabetes_deaths = sm.glm(formula="Diabetes_Deaths ~ Obesity + Smoking + Binge_Drinking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
+resp_deaths = sm.glm(formula="Respiratory_Disease_Deaths ~ Obesity + Smoking + Binge_Drinking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
 
-cancer_deaths = sm.ols(formula="Cancer_Deaths ~ Obesity + Binge_Drinking + Smoking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
-print(dict(zip(cancer_deaths.pvalues.index,cancer_deaths.pvalues)))
+models = []
+models.append(heart_deaths)
+models.append(cancer_deaths)
+models.append(diabetes_deaths)
+models.append(resp_deaths)
 
-diabetes_deaths = sm.ols(formula="Diabetes_Deaths ~ Obesity + Smoking + Binge_Drinking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
-print(dict(zip(diabetes_deaths.pvalues.index,diabetes_deaths.pvalues)))
+#models.append(heart_deaths).append(cancer_deaths).append(diabetes_deaths).append(hiv_deaths)
 
-hiv_deaths = sm.ols(formula="HIV_Deaths ~ Obesity + Smoking + Binge_Drinking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
-print(dict(zip(diabetes_deaths.pvalues.index,hiv_deaths.pvalues)))
+factor_list = []
+for model in models:
+    p_dict = dict(zip(model.pvalues.index,model.pvalues))
+    params_dict = dict(zip(model.params.index,model.params))
+    filtered_dict = {k:abs(v) for (k,v) in params_dict.items() if p_dict.get(k) < 0.1 and k is not 'Intercept'}
+    sorted_list = sorted(filtered_dict.items(), key=operator.itemgetter(1),reverse = True)
+    if len(sorted_list) >2:
+        sorted_list = sorted_list[0:2] 
+    factor_list.append(sorted_list)
+    
 
-'''
+print(factor_list)
+
+
+
 us_counties=us_counties.data.copy()
 fips_list = [ (a*1000+b)for (a,b) in us_counties.keys() if a is 51]
 
@@ -54,9 +78,6 @@ fips_list = [ (a*1000+b)for (a,b) in us_counties.keys() if a is 51]
 va_xs=[us_counties[x]["lons"] for x in us_counties if us_counties[x]["state"]=='va']
 va_ys=[us_counties[y]["lats"] for y in us_counties if us_counties[y]["state"]=='va']
 
-def miss(x):
-    if not(math.isnan(x)):
-        return(x)
 
 va_x=[]
 for l in va_xs:
@@ -120,10 +141,6 @@ hover=HoverTool(tooltips=[("County Name","@i")])
 p = figure(title="US Health Indicator-Virginia", toolbar_location="left",
            plot_width=1100, plot_height=700,tools=[hover])
 
-#x=[[1,2,3],[4,5,6,5]]
-#y=[[1,2,1],[4,5,5]]
-#p.patches(xs=x, ys=y,fill_color=["#43a2ca", "#a8ddb5"])
-
 p.patches(xs='x',ys='y', fill_color='c',source=source,alpha=0.5)
 bar=Bar(inf_source.data,title="Top Influencers",legend=True)
 
@@ -144,4 +161,4 @@ if __name__=='__main__':
     view(link)
     session.poll_document(document)
     
-'''
+
