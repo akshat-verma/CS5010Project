@@ -4,10 +4,7 @@ Created on Aug 11, 2015
 @author: akshat
 '''
 import pandas as pd
-
 import statsmodels.formula.api as sm
-
-import bokeh
 from bokeh.browserlib import view
 from bokeh.models.widgets import VBox,HBox
 from bokeh.models import RadioButtonGroup,ColumnDataSource,HoverTool
@@ -18,45 +15,39 @@ from bokeh.charts import Bar
 from bokeh.sampledata import us_counties
 import numpy as np
 import math
+from sympy.printing.pretty.pretty_symbology import MID
 
 
 
-df = pd.read_csv("test.csv")
+df = pd.read_csv("indicators.csv")
 df = pd.DataFrame({'Value' : df.groupby( [ "County", "Indicator Type"] )['Value'].mean()}).reset_index()
 df = df.pivot_table("Value",["County"],"Indicator Type").reset_index()
 df.set_index('County',inplace=True)
-print (list(df.index))
+
+
 
 '''
 result = sm.ols(formula="Heart_Deaths ~ Obesity", data=df).fit()
 print(dict(zip(result.pvalues.index,result.pvalues)))
-
+'''
 #Regression
-heart_deaths = sm.ols(formula="Heart_Disease_Deaths ~ Obesity + Smoking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Healthy_Food_Outlets + Liquor_Stores", data=df).fit()
+
+heart_deaths = sm.ols(formula="Heart_Disease_Deaths ~ Obesity + Binge_Drinking + Smoking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
+print (heart_deaths.summary())
 print(dict(zip(heart_deaths.pvalues.index,heart_deaths.pvalues)))
 
-cancer_deaths = sm.ols(formula="Cancer_Deaths ~ Obesity + Smoking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Healthy_Food_Outlets + Liquor_Stores", data=df).fit()
+cancer_deaths = sm.ols(formula="Cancer_Deaths ~ Obesity + Binge_Drinking + Smoking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
 print(dict(zip(cancer_deaths.pvalues.index,cancer_deaths.pvalues)))
 
-diabetes_deaths = sm.ols(formula="Diabetes_Deaths ~ Obesity + Smoking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Healthy_Food_Outlets + Liquor_Stores", data=df).fit()
-print(dict(zip(diabetes_deaths.pvalues.index,cancer_deaths.pvalues)))
+diabetes_deaths = sm.ols(formula="Diabetes_Deaths ~ Obesity + Smoking + Binge_Drinking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
+print(dict(zip(diabetes_deaths.pvalues.index,diabetes_deaths.pvalues)))
 
-hiv_deaths = sm.ols(formula="HIV_deaths ~ Obesity + Smoking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Healthy_Food_Outlets + Liquor_Stores", data=df).fit()
-print(dict(zip(diabetes_deaths.pvalues.index,cancer_deaths.pvalues)))
+hiv_deaths = sm.ols(formula="HIV_Deaths ~ Obesity + Smoking + Binge_Drinking + Primary_Care + No_Insurance + Median_Household_Income + College_Degrees + Long_Term_Care_Hospital_Admissions + Unemployed_Persons + Liquor_Stores", data=df).fit()
+print(dict(zip(diabetes_deaths.pvalues.index,hiv_deaths.pvalues)))
 
 '''
 us_counties=us_counties.data.copy()
 fips_list = [ (a*1000+b)for (a,b) in us_counties.keys() if a is 51]
-
-def missing(x):
-    if x=='DSU':
-        return (np.float('nan'))
-    else: return (x)
-
-
-
-df=df.applymap(missing)
-print (df)
 
 
 
@@ -80,9 +71,7 @@ for l in va_ys:
 county_nm=pd.Series([us_counties[x]["name"] for x in us_counties if us_counties[x]["state"]=='va'])
 
 data_counties=pd.DataFrame(index=pd.Series(fips_list))
-print(len(list(data_counties.index)))
 data_counties=pd.concat([data_counties,df],axis=1)
-print(len(list(data_counties.index)))
 influencers=[dict(Liquor=[30],Parks=[20]),dict(ambience=[30],hospital_reach=[20])]
 
 top_qtl=df.quantile(0.66)
@@ -93,25 +82,33 @@ document=Document()
 session.use_doc('python_project')
 session.load_document(document)
 
+col_dic =  {0:"Cancer_Deaths", 1:"Heart_Disease_Deaths", 2:"HIV_Deaths", 3:"Diabetes_Deaths"}
 
 def update(a):    
     global county_colors
     county_colors=[]    
-    for county in data_counties.ix[:,a]:
-        if county>top_qtl[a] :
-            county_colors.append("green")
-        elif county>middle_qtl[a]:
+    for county in data_counties[col_dic.get(a)]:
+        if county>top_qtl[col_dic.get(a)] :
+            county_colors.append("red")
+            print (county,"red")
+        elif county>middle_qtl[col_dic.get(a)]:
             county_colors.append( "yellow")
+            print (county,"yellow")
+        elif not math.isnan(county):
+            county_colors.append("green")
+            print (county,"green")
+            print(top_qtl[col_dic.get(a)])
+
         else:
-            county_colors.append("red")    
+            county_colors.append("white") 
     source.data=dict(x=va_x,y=va_y,c=county_colors,i=list(data_counties.index)) 
-    inf_source.data=influencers[a]    
-    print(source.data['x'])
+    #inf_source.data=influencers[a]    
+    #print(source.data['x'])
 
     bar=Bar(inf_source.data,title="Top Influencers",legend=True)
     document.clear()
     layout1=HBox(children=[layout,bar])
-    document.add(layout,layout1)
+    document.add(layout1)
     session.store_document(document)
         
     
@@ -130,7 +127,7 @@ p = figure(title="US Health Indicator-Virginia", toolbar_location="left",
 p.patches(xs='x',ys='y', fill_color='c',source=source,alpha=0.5)
 bar=Bar(inf_source.data,title="Top Influencers",legend=True)
 
-radio=RadioButtonGroup(labels=['Cancer Deaths','Alcoholic Percentage'],active=0)
+radio=RadioButtonGroup(labels=['Cancer Deaths','Heart Disease Deaths', 'HIV Deaths', 'Diabetes Deaths'],active=0)
 radio.on_click(update)
 
 
@@ -140,8 +137,11 @@ document.add(layout1)
 
 update(0)
 
+
 if __name__=='__main__':
     link = session.object_link(document.context)
     print("Please visit %s to see the plots" % link)
     view(link)
     session.poll_document(document)
+    
+'''
